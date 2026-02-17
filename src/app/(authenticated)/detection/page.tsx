@@ -71,12 +71,19 @@ export default function DetectionPage() {
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       })
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
       setCameraActive(true)
-    } catch {
-      toast.error('Tidak dapat mengakses kamera')
+      // Wait for React to render the video element, then attach stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play().catch(() => {})
+          }
+        }
+      }, 100)
+    } catch (err) {
+      console.error('Camera error:', err)
+      toast.error('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.')
     }
   }
 
@@ -349,6 +356,7 @@ export default function DetectionPage() {
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-full object-cover"
               />
             ) : image ? (
