@@ -1,6 +1,8 @@
 import { getToken } from 'next-auth/jwt'
 import { cookies, headers } from 'next/headers'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 /**
  * Get session for API route handlers without CSRF validation.
  * Use this instead of auth() in API routes that accept POST/PUT/DELETE.
@@ -10,6 +12,8 @@ export async function getApiSession() {
   const cookieStore = await cookies()
   const headerStore = await headers()
 
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+
   const token = await getToken({
     req: {
       cookies: Object.fromEntries(
@@ -17,7 +21,8 @@ export async function getApiSession() {
       ),
       headers: Object.fromEntries(headerStore.entries()),
     } as Parameters<typeof getToken>[0]['req'],
-    secret: process.env.NEXTAUTH_SECRET,
+    secret,
+    secureCookie: isProduction,
   })
 
   if (!token) return null
