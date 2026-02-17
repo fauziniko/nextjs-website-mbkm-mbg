@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dailyMenus DailyMenu[]
+
+  @@map("users")
+}
+
+model FoodType {
+  id       String @id @default(cuid())
+  name     String @unique
+  imageUrl String?
+
+  // Porsi Besar
+  energyLarge       Float @default(0) // kkal
+  proteinLarge      Float @default(0) // gram
+  fatLarge          Float @default(0) // gram
+  fiberLarge        Float @default(0) // gram
+  carbohydrateLarge Float @default(0) // gram
+
+  // Porsi Kecil
+  energySmall       Float @default(0) // kkal
+  proteinSmall      Float @default(0) // gram
+  fatSmall          Float @default(0) // gram
+  fiberSmall        Float @default(0) // gram
+  carbohydrateSmall Float @default(0) // gram
+
+  menuFoods MenuFood[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("food_types")
+}
+
+model Menu {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  detectedImageUrl String?
+
+  totalEnergy       Float @default(0)
+  totalProtein      Float @default(0)
+  totalFat          Float @default(0)
+  totalFiber        Float @default(0)
+  totalCarbohydrate Float @default(0)
+
+  menuFoods  MenuFood[]
+  dailyMenus DailyMenu[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("menus")
+}
+
+model MenuFood {
+  id       String @id @default(cuid())
+  menuId   String
+  foodId   String
+  quantity Float  @default(1) // porsi
+
+  menu Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  food FoodType @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, foodId])
+  @@map("menu_foods")
+}
+
+model DailyMenu {
+  id     String   @id @default(cuid())
+  userId String
+  menuId String?
+  date   DateTime @default(now())
+  notes  String?
+
+  // Override gizi per item (jika diedit user)
+  customEnergy       Float?
+  customProtein      Float?
+  customFat          Float?
+  customFiber        Float?
+  customCarbohydrate Float?
+
+  // Detected image
+  originalImageUrl String?
+  detectedImageUrl String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menu Menu? @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  dailyMenuFoods DailyMenuFood[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("daily_menus")
+}
+
+model DailyMenuFood {
+  id          String @id @default(cuid())
+  dailyMenuId String
+  foodName    String
+  quantity    Float  @default(1)
+
+  // Detection info
+  foodImageUrl String?
+  confidence   Float   @default(0)
+  trayClass    String?
+
+  // Gizi Porsi Besar
+  energy       Float @default(0)
+  protein      Float @default(0)
+  fat          Float @default(0)
+  fiber        Float @default(0)
+  carbohydrate Float @default(0)
+
+  // Gizi Porsi Kecil
+  energySmall       Float @default(0)
+  proteinSmall      Float @default(0)
+  fatSmall          Float @default(0)
+  fiberSmall        Float @default(0)
+  carbohydrateSmall Float @default(0)
+
+  dailyMenu DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+
+  @@map("daily_menu_foods")
+}
+
+model AkgThreshold {
+  id           String @id @default(cuid())
+  name         String @unique // e.g. "Standar MBG Makan Siang"
+  description  String?
+  energy       Float  @default(0) // kkal
+  protein      Float  @default(0) // gram
+  fat          Float  @default(0) // gram
+  fiber        Float  @default(0) // gram
+  carbohydrate Float  @default(0) // gram
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("akg_thresholds")
+}
